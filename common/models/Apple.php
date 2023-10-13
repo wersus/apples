@@ -2,8 +2,11 @@
 
 namespace common\models;
 
+use common\domain\Apple as AppleDomain;
+use common\exceptions\AppleException;
 use DateInterval;
 use DateTime;
+use Throwable;
 use Yii;
 use yii\db\ActiveRecord;
 use \Exception;
@@ -21,48 +24,7 @@ use \Exception;
  */
 class Apple extends ActiveRecord
 {
-    /**
-     * Статус "На дереве"
-     * по умолчанию
-     */
-    public const STATUS_ON_TREE = 0;
-
-    /**
-     * Статус "На земле"
-     */
-    public const STATUS_ON_GROUND = 1;
-
-    /**
-     * Статус "Удалён"
-     */
-    public const STATUS_DELETED = 2;
-
-    public static array $statuses = [
-        self::STATUS_ON_TREE => 'На дереве',
-        self::STATUS_ON_GROUND => 'На земле',
-        self::STATUS_DELETED => 'Удалён',
-    ];
-
-    /**
-     * Формат даты
-     *
-     * лучше хранить в settings
-     * обычно есть какая то надстройка для подобного
-     */
-    public const DEFAULT_DATE_TIME_FORMAT = 'Y-m-d H:i:s';
-
-    /**
-     * Интервал за который яблоко портиться
-     */
-    public const ROTTEN_INTERVAL = 'PT5H';
-
-
-    public const ERROR_IS_ROTTEN = 1;
-    public const ERROR_ON_TREE = 2;
-    public const ERROR_MORE_THEN_100 = 3;
-    public const ERROR_ON_GROUND = 4;
-    public const ERROR_NOT_DELETE = 5;
-
+    private ?AppleDomain $domain;
 
     /**
      * {@inheritdoc}
@@ -72,13 +34,26 @@ class Apple extends ActiveRecord
         return 'model_apples';
     }
 
-
-    public static function generate()
+    public static function generate(): void
     {
-        foreach (range(1, rand(1, 5)) as $item) {
-            $model = new Apple();
+        foreach (AppleDomain::generate() as $apple) {
+            /** @var AppleDomain $apple */
+            $model = new self();
+            self::toModel($model, $apple);
             $model->save();
         }
+    }
+
+    private static function toModel(Apple $model, AppleDomain $apple): Apple
+    {
+        $model->attributes = [
+            'color' => $apple->getColor(),
+            'created_at' => $apple->getCreatedAt(),
+            'dropped_at' => $apple->getDroppedAt(),
+            'status' => $apple->getStatus(),
+            'size' => $apple->getSize(),
+        ];
+        return $model;
     }
 
     /**
@@ -88,13 +63,9 @@ class Apple extends ActiveRecord
     {
         return [
             ['color', 'string'],
-            [['created_at', 'deleted_at', 'dropped_at'], 'date', 'format' => 'php:' . self::DEFAULT_DATE_TIME_FORMAT],
+            [['created_at', 'dropped_at'], 'date', 'format' => 'php:' . AppleDomain::DEFAULT_DATE_TIME_FORMAT],
             [['status', 'size'], 'integer'],
-            [['status'], 'in', 'range' => array_keys(self::$statuses)],
-
-            ['status', 'default', 'value' => 'hanging'],
-            ['size', 'default', 'value' => 100],
-            ['color', 'default', 'value' => sprintf('#%06X', mt_rand(0, 0xFFFFFF))],
+            [['status'], 'in', 'range' => array_keys(AppleDomain::$statuses)],
         ];
     }
 
@@ -114,81 +85,46 @@ class Apple extends ActiveRecord
         ];
     }
 
-    /**
-     * Съесть
-     *
-     * @param int $percent
-     * @return $this
-     * @throws Exception
-     */
-    public function eat(int $percent): self
+    public function afterFind()
     {
-        if ($this->status == self::STATUS_ON_TREE) {
-            throw new Exception('Съесть нельзя, яблоко на дереве', self::ERROR_ON_TREE);
+        try {
+            $this->domain = (new AppleDomain($this->color))
+                ->setCreatedAtFromString($this->created_at)
+                ->setDroppedAtFromString($this->dropped_at)
+                ->setSize($this->size)
+                ->setStatus($this->status);
+        } catch (AppleException $e) {
+            throw new Exception($e->getMessage());
+        } catch (Throwable $e) {
+            throw new Exception('Something wrong');
         }
 
-        if ($this->isRotten()) {
-            throw new Exception('Яблоко уже гнилое', self::ERROR_IS_ROTTEN);
+        parent::afterFind();
+    }
+
+    public function failToGround(): static
+    {
+        try {
+            $this->domain->failToGround();
+        } catch (AppleException $e) {
+            throw new Exception($e->getMessage());
+        } catch (Throwable $e) {
+            throw new Exception('Something wrong');
         }
-
-        if (($this->size - $percent) < 0) {
-            throw new Exception('Нельзя съесть больше 100% яблока', self::ERROR_MORE_THEN_100);
-        }
-
-        $this->size -= $percent;
-
-        $this->save();
+        self::toModel($this, $this->domain);
         return $this;
     }
 
-    /**
-     * Упасть
-     *
-     * @return $this
-     * @throws Exception
-     */
-    public function failToGround(): self
+    public function eat(int $percent): static
     {
-        if ($this->status == self::STATUS_ON_GROUND) {
-            throw new Exception('Яблоко не может упасть оно уже на земле', self::ERROR_ON_GROUND);
+        try {
+        $this->domain->eat($percent);
+        } catch (AppleException $e) {
+            throw new Exception($e->getMessage());
+        } catch (Throwable $e) {
+            throw new Exception('Something wrong');
         }
-
-        $this->status = self::STATUS_ON_GROUND;
-        $this->dropped_at = (new DateTime('now'))->format(self::DEFAULT_DATE_TIME_FORMAT);
-        $this->save();
+        self::toModel($this, $this->domain);
         return $this;
-    }
-
-
-    /**
-     * Удалить
-     *
-     * @return $this
-     * @throws Exception
-     */
-    public function del(): self
-    {
-        if ($this->status == self::STATUS_ON_TREE) {
-            throw new Exception('Не возможно удалить яблоко оно на дереве', self::ERROR_NOT_DELETE);
-        }
-        $this->deleted_at = (new DateTime('now'))->format(self::DEFAULT_DATE_TIME_FORMAT);
-        $this->status = self::STATUS_DELETED;
-
-        return $this;
-    }
-
-
-    /**
-     * Уже протухло?
-     *
-     * @return bool
-     * @throws \Exception
-     */
-    private function isRotten(): bool
-    {
-        $dropped = (new DateTime($this->dropped_at));
-        $rotten_interval = new DateInterval(self::ROTTEN_INTERVAL);
-
-        return $dropped->add($rotten_interval) <= new DateTime();
     }
 }

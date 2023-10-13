@@ -12,7 +12,6 @@ class AppleSearch extends Apple
     {
         return [
             [['id'], 'integer'],
-//            [['color', 'status'], 'safe'],
         ];
     }
 
@@ -20,7 +19,7 @@ class AppleSearch extends Apple
     {
         $query = Apple::find();
 
-        $query->andFilterWhere(['!=', 'status', Apple::STATUS_DELETED]);
+        $query->andFilterWhere(['!=', 'status', \common\domain\Apple::STATUS_DELETED]);
 
         $dataProvider = new ActiveDataProvider([
             'query' => $query,

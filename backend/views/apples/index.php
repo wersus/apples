@@ -1,6 +1,8 @@
 <?php
 
 use common\models\Apple;
+use common\models\AppleSearch;
+use yii\data\ActiveDataProvider;
 use yii\grid\GridView;
 use yii\helpers\Html;
 use yii\widgets\ActiveForm;
@@ -21,9 +23,8 @@ echo Html::submitButton('Сгенерировать', [
     'class' => 'btn btn-primary',
 ]);
 $form->end();
-
-?>
-<?php
+/** @var ActiveDataProvider $dataProvider */
+/** @var AppleSearch $searchModel */
 echo GridView::widget([
     'dataProvider' => $dataProvider,
     'filterModel' => $searchModel,
@@ -33,7 +34,7 @@ echo GridView::widget([
         'dropped_at',
         [
             'attribute' => 'status',
-            'value' => static fn($data) => Apple::$statuses[$data->status] ?? '',
+            'value' => static fn($data) => \common\domain\Apple::$statuses[$data->status] ?? '',
         ],
         'size',
         [
@@ -41,7 +42,7 @@ echo GridView::widget([
             'template' => '{fail-to-ground} {eat} {delete}',
             'buttons' => [
                 'fail-to-ground' => static function ($url, $model) {
-                    return ($model->status == Apple::STATUS_ON_TREE)
+                    return ($model->status == \common\domain\Apple::STATUS_ON_TREE)
                         ? Html::a(
                             'Упасть',
                             $url,
@@ -52,10 +53,10 @@ echo GridView::widget([
                         : '';
                 },
                 'eat' => static function ($url, $model) {
-                    return ($model->status == Apple::STATUS_ON_GROUND && $model->size != 0)
+                    return ($model->status == \common\domain\Apple::STATUS_ON_GROUND && $model->size != 0)
                         ? Html::a(
                             'Съёсть 10%',
-                            $url.'&percent=10',
+                            $url . '&percent=10',
                             [
                                 'title' => 'Съёсть 10%',
                                 'class' => 'btn btn-success btn-sm',
@@ -63,15 +64,15 @@ echo GridView::widget([
                         : '';
                 },
                 'delete' => static function ($url, $model) {
-                    if ($model->size == 0) {
-                        return Html::a(
+                    return ($model->size == 0)
+                        ? Html::a(
                             'Удалить',
                             $url,
                             [
                                 'title' => 'Удалить',
                                 'class' => 'btn btn-danger btn-sm',
-                            ]);
-                    }
+                            ])
+                        : '';
                 }
             ],
         ],

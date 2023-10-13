@@ -5,6 +5,7 @@ namespace backend\controllers;
 use common\models\Apple;
 use common\models\AppleSearch;
 use Exception;
+use Throwable;
 use yii\helpers\Json;
 use Yii;
 use yii\filters\AccessControl;
@@ -54,9 +55,12 @@ class ApplesController extends Controller
             if (!$model = Apple::findOne(['id' => $id])) {
                 throw new Exception('Not found id');
             }
-            $model->failToGround();
+
+            $model->failToGround()->save();
+
             $this->redirect(self::INDEX);
-        } catch (Exception $e) {
+
+        } catch (Throwable $e) {
             return Json::encode($e->getMessage());
         }
     }
@@ -67,9 +71,12 @@ class ApplesController extends Controller
             if (!$model = Apple::findOne(['id' => $id])) {
                 throw new Exception('Not found id');
             }
-            $model->eat($percent);
+
+            $model->eat($percent)->save();
+
             $this->redirect(self::INDEX);
-        } catch (Exception $e) {
+
+        } catch (Throwable $e) {
             return Json::encode($e->getMessage());
         }
     }
@@ -80,9 +87,11 @@ class ApplesController extends Controller
             if (!$model = Apple::findOne(['id' => $id])) {
                 throw new Exception('Not found id');
             }
-            $model->del();
+
+            $model->delete();
+
             $this->redirect(self::INDEX);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return Json::encode($e->getMessage());
         }
     }
