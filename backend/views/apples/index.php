@@ -11,11 +11,6 @@ $this->title = Yii::t('app', 'Apples');
 $this->params['breadcrumbs'][] = $this->title;
 
 /* @var Apple $model */
-
-?>
-
-<?php
-
 $form = ActiveForm::begin([
     'action' => ['apples/generate'],
 ]);
@@ -29,7 +24,11 @@ echo GridView::widget([
     'dataProvider' => $dataProvider,
     'filterModel' => $searchModel,
     'columns' => [
-        'color',
+        'color' => [
+            'attribute' => 'color',
+            'value' => static fn($data) => '<div style="width:30px;height:30px;background-color:' . $data->color . ';"></div>',
+            'format' => 'raw',
+        ],
         'created_at',
         'dropped_at',
         [
@@ -64,7 +63,7 @@ echo GridView::widget([
                         : '';
                 },
                 'delete' => static function ($url, $model) {
-                    return ($model->size == 0)
+                    return ($model->size == 0 || $model->status == \common\domain\Apple::STATUS_ON_GROUND)
                         ? Html::a(
                             'Удалить',
                             $url,

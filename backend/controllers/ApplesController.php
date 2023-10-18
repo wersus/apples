@@ -58,11 +58,12 @@ class ApplesController extends Controller
 
             $model->failToGround()->save();
 
-            $this->redirect(self::INDEX);
-
         } catch (Throwable $e) {
-            return Json::encode($e->getMessage());
+            Yii::$app->session->setFlash('error', $e->getMessage());
+        } finally {
+            $this->redirect(self::INDEX);
         }
+
     }
 
     public function actionEat(int $id, int $percent)
@@ -74,10 +75,10 @@ class ApplesController extends Controller
 
             $model->eat($percent)->save();
 
-            $this->redirect(self::INDEX);
-
         } catch (Throwable $e) {
-            return Json::encode($e->getMessage());
+            Yii::$app->session->setFlash('error', $e->getMessage());
+        } finally {
+            $this->redirect(self::INDEX);
         }
     }
 
@@ -90,9 +91,10 @@ class ApplesController extends Controller
 
             $model->delete();
 
-            $this->redirect(self::INDEX);
         } catch (Throwable $e) {
-            return Json::encode($e->getMessage());
+            Yii::$app->session->setFlash('error', $e->getMessage());
+        } finally {
+            $this->redirect(self::INDEX);
         }
     }
 }
