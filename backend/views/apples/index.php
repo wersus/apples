@@ -1,5 +1,6 @@
 <?php
 
+use common\domain\Apple as AppleDomain;
 use common\models\Apple;
 use common\models\AppleSearch;
 use yii\data\ActiveDataProvider;
@@ -33,7 +34,7 @@ echo GridView::widget([
         'dropped_at',
         [
             'attribute' => 'status',
-            'value' => static fn($data) => \common\domain\Apple::$statuses[$data->status] ?? '',
+            'value' => static fn($data) => AppleDomain::$statuses[$data->status] ?? '',
         ],
         'size',
         [
@@ -41,7 +42,7 @@ echo GridView::widget([
             'template' => '{fail-to-ground} {eat} {delete}',
             'buttons' => [
                 'fail-to-ground' => static function ($url, $model) {
-                    return ($model->status == \common\domain\Apple::STATUS_ON_TREE)
+                    return ($model->status == AppleDomain::STATUS_ON_TREE)
                         ? Html::a(
                             'Упасть',
                             $url,
@@ -52,7 +53,7 @@ echo GridView::widget([
                         : '';
                 },
                 'eat' => static function ($url, $model) {
-                    return ($model->status == \common\domain\Apple::STATUS_ON_GROUND && $model->size != 0)
+                    return ($model->status == AppleDomain::STATUS_ON_GROUND && $model->size != 0 && !$model->isRotten())
                         ? Html::a(
                             'Съёсть 10%',
                             $url . '&percent=10',
