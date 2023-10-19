@@ -21,6 +21,7 @@ use \Exception;
  * @property string|null $dropped_at
  * @property int $status
  * @property int $size
+ * @property AppleDomain $domain
  */
 class Apple extends ActiveRecord
 {
@@ -126,5 +127,10 @@ class Apple extends ActiveRecord
         }
         self::toModel($this, $this->domain);
         return $this;
+    }
+
+    public function isRotten(): bool
+    {
+        return $this->domain->isRotten();
     }
 }

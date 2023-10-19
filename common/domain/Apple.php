@@ -142,10 +142,10 @@ class Apple
      *
      * @return bool
      */
-    private function isRotten(): bool
+    public function isRotten(): bool
     {
         $dropped_at = $this->dropped_at;
-        return $dropped_at->add(new DateInterval(self::ROTTEN_INTERVAL)) <= new DateTimeImmutable();
+        return is_a($dropped_at, \DateTimeInterface::class) && $dropped_at->add(new DateInterval(self::ROTTEN_INTERVAL)) <= new DateTimeImmutable();
     }
 
     public function setColor(string $color): Apple

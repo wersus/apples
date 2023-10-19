@@ -63,7 +63,8 @@ echo GridView::widget([
                         : '';
                 },
                 'delete' => static function ($url, $model) {
-                    return ($model->size == 0 || $model->status == \common\domain\Apple::STATUS_ON_GROUND)
+                    /** @var Apple $model */
+                    return ($model->size == 0 || $model->isRotten())
                         ? Html::a(
                             'Удалить',
                             $url,
